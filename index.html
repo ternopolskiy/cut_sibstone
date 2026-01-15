@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Раскрой листового материала</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.31/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/roboto-fontface@0.10.0/fonts/roboto/Roboto-Regular.ttf"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Раскрой листового материала</h1>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="project">Проект</button>
+            <button class="tab-btn" data-tab="cutting">Раскрой</button>
+            <button class="tab-btn" data-tab="cost">Стоимость</button>
+        </div>
+
+        <div id="project" class="tab-content active">
+            <div class="section">
+                <h2><i class="fas fa-folder-open"></i> Управление проектом</h2>
+                
+                <div class="project-layout">
+                    <div class="left-panel">
+                        <div class="card">
+                            <h3><i class="fas fa-plus-circle"></i> Добавление деталей</h3>
+                            <div class="form-group">
+                                <div class="input-wrapper">
+                                    <label>Длина (мм)</label>
+                                    <input type="number" id="detailLength" placeholder="2550" min="1">
+                                </div>
+                                <div class="input-wrapper">
+                                    <label>Ширина (мм)</label>
+                                    <input type="number" id="detailWidth" placeholder="600" min="1">
+                                </div>
+                                <div class="input-wrapper">
+                                    <label>Количество</label>
+                                    <input type="number" id="detailQty" placeholder="1" min="1" value="1">
+                                </div>
+                                <div class="input-wrapper full-width">
+                                    <label>Название детали</label>
+                                    <input type="text" id="detailName" placeholder="Столешница">
+                                </div>
+                                <div class="input-wrapper full-width">
+                                    <label>Примечания</label>
+                                    <input type="text" id="detailNotes" placeholder="Дополнительная информация">
+                                </div>
+                                <div class="checkbox-wrapper">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="detailRotate" checked>
+                                        <span>Разрешить поворот детали</span>
+                                    </label>
+                                </div>
+                                <button class="btn btn-primary" onclick="addDetail()">
+                                    <i class="fas fa-plus"></i> Добавить деталь
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3><i class="fas fa-file-import"></i> Импорт / Экспорт</h3>
+                            <div class="import-export">
+                                <input type="file" id="csvImport" accept=".csv" style="display:none">
+                                <button class="btn btn-success" onclick="document.getElementById('csvImport').click()">
+                                    <i class="fas fa-upload"></i> Импорт CSV
+                                </button>
+                                <button class="btn btn-info" onclick="exportSimpleCSV()">
+                                    <i class="fas fa-download"></i> Экспорт деталей
+                                </button>
+                            </div>
+                            <p style="font-size: 12px; color: #6b7280; margin-top: 10px;">
+                                <i class="fas fa-info-circle"></i> Используйте "Экспорт деталей" для сохранения списка деталей, который можно импортировать обратно
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="right-panel">
+                        <div class="card">
+                            <h3><i class="fas fa-eye"></i> Предпросмотр проекта</h3>
+                            <div id="projectPreview" class="project-preview">
+                                <div class="empty-state">
+                                    <i class="fas fa-cube"></i>
+                                    <p>Добавьте детали для просмотра</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="details-list">
+                    <h3><i class="fas fa-list"></i> Список деталей</h3>
+                    <div class="table-wrapper">
+                        <table id="detailsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Название</th>
+                                    <th>Размер (мм)</th>
+                                    <th>Кол-во</th>
+                                    <th>Площадь</th>
+                                    <th>Примечания</th>
+                                    <th>Поворот</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cutting" class="tab-content">
+            <div class="section">
+                <h2><i class="fas fa-cut"></i> Параметры раскроя</h2>
+                
+                <div class="cutting-layout">
+                    <div class="settings-panel card">
+                        <h3><i class="fas fa-cog"></i> Настройки</h3>
+                        <div class="form-group">
+                            <div class="input-wrapper full-width">
+                                <label>Материал:</label>
+                                <select id="materialType">
+                                    <option value="acrylic_standard">Акрил стандартный 3680×760×12</option>
+                                    <option value="acrylic_premium">Акрил премиум 3680×760×12</option>
+                                    <option value="quartz_standard">Кварц стандартный 3050×1440×20</option>
+                                    <option value="quartz_premium">Кварц премиум 3200×1600×20</option>
+                                    <option value="acrylic_thin">Акрил тонкий 6мм 3680×760×6</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="settings-grid">
+                            <div class="input-wrapper">
+                                <label>Ширина реза (мм):</label>
+                                <input type="number" id="cutWidth" value="3" min="0" step="0.1">
+                            </div>
+                            <div class="input-wrapper">
+                                <label>Минимальный отступ (мм):</label>
+                                <input type="number" id="minMargin" value="10" min="0">
+                            </div>
+                            <div class="input-wrapper">
+                                <label>Скорость резки (мм/мин):</label>
+                                <input type="number" id="cutSpeed" value="1000" min="1">
+                            </div>
+                        </div>
+
+                        <div class="visualization-settings">
+                            <h4>Визуализация</h4>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showGrid" checked>
+                                <span>Показывать сетку</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showDimensions" checked>
+                                <span>Показывать размеры</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="highlightRemnants" checked>
+                                <span>Подсветка остатков</span>
+                            </label>
+                        </div>
+
+                        <button class="btn btn-primary btn-large" onclick="calculateCutting()">
+                            <i class="fas fa-calculator"></i> Запустить расчет
+                        </button>
+                    </div>
+                </div>
+
+                <div id="cuttingResults" style="display:none;">
+                    <h3><i class="fas fa-chart-bar"></i> Результаты раскроя</h3>
+                    <div id="cuttingStats"></div>
+                    
+                    <div class="visualization-container card">
+                        <div class="canvas-toolbar">
+                            <button class="btn btn-sm" onclick="zoomIn()"><i class="fas fa-search-plus"></i> Увеличить</button>
+                            <button class="btn btn-sm" onclick="zoomOut()"><i class="fas fa-search-minus"></i> Уменьшить</button>
+                            <button class="btn btn-sm" onclick="resetView()"><i class="fas fa-redo"></i> Сброс</button>
+                            <span id="zoomLevel" class="zoom-indicator">100%</span>
+                        </div>
+                        <div id="canvasContainer" class="canvas-wrapper">
+                            <canvas id="cuttingCanvas"></canvas>
+                        </div>
+                        <div id="sheetSelector" class="sheet-selector"></div>
+                    </div>
+                    
+                    <div id="detailInfo" class="detail-info-panel card">
+                        <h4><i class="fas fa-info-circle"></i> Информация о детали</h4>
+                        <div id="detailInfoContent">Наведите на деталь для просмотра информации</div>
+                    </div>
+                    
+                    <div id="remnantsInfo" class="remnants-panel card">
+                        <h4><i class="fas fa-recycle"></i> Полезные остатки</h4>
+                        <div id="remnantsContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cost" class="tab-content">
+            <div class="section">
+                <h2><i class="fas fa-dollar-sign"></i> Расчет стоимости</h2>
+                <button class="btn btn-primary btn-large" onclick="calculateCost()">
+                    <i class="fas fa-calculator"></i> Рассчитать стоимость
+                </button>
+                
+                <div id="costResults" style="display:none;">
+                    <div class="cost-summary">
+                        <div class="cost-item card">
+                            <i class="fas fa-coins"></i>
+                            <h3>Себестоимость</h3>
+                            <p class="cost-value" id="costPrice">0 ₽</p>
+                        </div>
+                        <div class="cost-item card">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            <h3>Цена для клиента</h3>
+                            <p class="cost-value" id="clientPrice">0 ₽</p>
+                        </div>
+                    </div>
+                    
+                    <div class="cost-breakdown card">
+                        <h3><i class="fas fa-chart-pie"></i> Детализация затрат</h3>
+                        <div class="chart-container">
+                            <canvas id="costChart"></canvas>
+                        </div>
+                        <div id="costDetails"></div>
+                    </div>
+
+                    <div class="metrics card">
+                        <h3><i class="fas fa-tachometer-alt"></i> Метрики проекта</h3>
+                        <div id="projectMetrics"></div>
+                    </div>
+
+                    <button class="btn btn-success btn-large" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf"></i> Экспорт в PDF
+                    </button>
+                    <button class="btn btn-info btn-large" onclick="exportFullCSV()">
+                        <i class="fas fa-file-csv"></i> Экспорт полного отчета CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
